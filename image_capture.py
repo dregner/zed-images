@@ -1,62 +1,89 @@
-########################################################################
-#
-# Copyright (c) 2021, STEREOLABS.
-#
-# All rights reserved.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-########################################################################
-
 import pyzed.sl as sl
+import argparse
+import os
+import cv2
+from datetime import datetime
+ 
+  # Initialize parser
+parser = argparse.ArgumentParser(description="Acquire images of ZED 2 camera")
+
+  # Adding optional argument
+parser.add_argument("--resolution", "-r", help = "Image resolution: 2000, 1080, 720, 640 (default: 720)", default=720, type=int)
+parser.add_argument("--type", "-t", help = "Image Type: raw or depth (default: raw)", default="raw", type=str)
+parser.add_argument("--path", "-p", help = "Saving path (default: /home/nvidia/Pictures/)", default="/home/nvidia/Pictures/", type=str)
+
+  # Read arguments from command line
+args = parser.parse_args()
 
 
+    
 def main():
+    folder_count = 0
+    key_pressed = "p" 
+    created = False 
+    while created == False:
+        if not os.path.isdir(args.Path + datetime.today().strftime('%Y-%m-%d')+"-"+str(folder_count)):
+            folder = os.path.join(args.Path + datetime.today().strftime('%Y-%m-%d')+"-"+str(folder_count))
+            os.makedirs(folder)
+            print(folder)
+            created = True
+        else:
+            folder_count += 1
+
+
     # Create a Camera object
     zed = sl.Camera()
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode
-    init_params.camera_fps = 30  # Set fps at 30
+    if args.Resolution == 2000:
+        init_params.camera_resolution = sl.RESOLUTION.HD2K  # Use HD1080 video mode
+        init_params.camera_fps = 30  # Set fps at 30
+    elif args.Resolution == 1080:
+        init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode
+        init_params.camera_fps = 30  # Set fps at 30
+    elif args.Resolution == 720:
+        init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
+        init_params.camera_fps = 60  # Set fps at 60
+    elif args.Resolution == 640:
+        init_params.camera_resolution = sl.RESOLUTION.VGA  # Use VGa video mode
+        init_params.camera_fps = 60  # Set fps at 60
 
     # Open the camera
     err = zed.open(init_params)
     if err != sl.ERROR_CODE.SUCCESS:
         exit(1)
 
-    # Capture 50 frames and stop
-    i = 0
-    image_left = sl.Mat()
-    image_right = sl.Mat()
+    image_count = 0
     runtime_parameters = sl.RuntimeParameters()
-    while i < 2:
+        
+    while key_pressed != "q":
         # Grab an image, a RuntimeParameters object must be given to grab()
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # A new image is available if grab() returns SUCCESS
-            zed.retrieve_image(image_left, sl.VIEW.LEFT)
-            zed.retrieve_image(image_right, sl.VIEW.RIGHT)
-            img_L = image_left.get_data()
-            img_L = image_left.write('LEFT.jpg')
-            img_R = image_right.get_data()
-            img_R = image_right.write('RIGHT.jpg')
-            timestamp = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT)  # Get the timestamp at the time the image was captured
+            if args.Type == "raw":
+              image_left = sl.Mat()
+              image_right = sl.Mat()
+              zed.retrieve_image(image_left, sl.VIEW.LEFT)
+              zed.retrieve_image(image_right, sl.VIEW.RIGHT)
+              img_L = cv2.imwrite(os.path.join(folder,"left_"+str(image_count)+".png"), image_left.get_data())
+              img_R = cv2.imwrite(os.path.join(folder, "right_"+str(image_count)+".png"),image_right.get_data())
+            elif args.Type == "depth":
+              depth_image = sl.Mat()
+              zed.retrieve_image(depth_image, sl.VIEW.DEPTH)
+              depth_img = cv2.imwrite(os.path.join(folder,"depth_"+str(image_count)+".png"), depth_image.get_data()) 
+              
+            #timestamp = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT)  # Get the timestamp at the time the image was captured
             #print("Image resolution: {0} x {1} || Image timestamp: {2}\n".format(image.get_width(), image.get_height(),
                   #timestamp.get_milliseconds()))
-            i = i + 1
+            image_count += 1
+            print("Image captured")
+            key_pressed = input("Press Enter to continue..(Q to quit)\n")
+            
 
     # Close the camera
     zed.close()
 
 if __name__ == "__main__":
+        
     main()
