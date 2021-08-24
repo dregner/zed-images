@@ -8,9 +8,9 @@ from datetime import datetime
 parser = argparse.ArgumentParser(description="Acquire images of ZED 2 camera")
 
   # Adding optional arguments
-parser.add_argument("--resolution", "-r", help = "Image resolution: 2000, 1080, 720, 640 (default: 720)", default=720, type=int)
-parser.add_argument("--type", "-t", help = "Image Type: raw or depth (default: raw)", default="raw", type=str)
-parser.add_argument("--path", "-p", help = "Saving path (default: /home/nvidia/Pictures/)", default="/home/nvidia/Pictures/", type=str)
+parser.add_argument("--Resolution", "-r", help = "Image resolution: 2000, 1080, 720, 640 (default: 720)", default=720, type=int)
+parser.add_argument("--Type", "-t", help = "Image Type: raw or depth (default: raw)", default="raw", type=str)
+parser.add_argument("--Path", "-p", help = "Saving path (default: /home/nvidia/Pictures/)", default="/home/nvidia/Pictures/", type=str)
 
   # Read arguments from command line
 args = parser.parse_args()
@@ -22,8 +22,8 @@ def main():
     key_pressed = "p" 
     created = False 
     while created == False:
-        if not os.path.isdir(args.Path + datetime.today().strftime('%Y-%m-%d')+"-E"+str(folder_count)): 
-            folder = os.path.join(args.Path + datetime.today().strftime('%Y-%m-%d')+"-E"+str(folder_count)) # create folder /home/nvidia/Pictures/YYYY-mm-dd-Ex/
+        if not os.path.isdir(args.Path + datetime.today().strftime('%Y-%m-%d')+"-"+str(args.Type)+"-"+str(args.Resolution)+"_"+str(folder_count)): 
+            folder = os.path.join(args.Path + datetime.today().strftime('%Y-%m-%d')+"-"+str(args.Type)+"-"+str(args.Resolution)+"_"+str(folder_count)) # create folder /home/nvidia/Pictures/YYYY-mm-dd-Ex/
             os.makedirs(folder)
             print(folder)
             created = True
@@ -65,7 +65,7 @@ def main():
               image_left = sl.Mat()
               image_right = sl.Mat()
               zed.retrieve_image(image_left, sl.VIEW.LEFT)
-              zed.retrieve_image(image_right, sl.VIEW.RIGHT)
+              zed.retrieve_image(image_right, sl.VIEW.RIGHT)        
               img_L = cv2.imwrite(os.path.join(folder,"left_"+str(image_count)+".png"), image_left.get_data())
               img_R = cv2.imwrite(os.path.join(folder, "right_"+str(image_count)+".png"),image_right.get_data())
             # If Type arg brings depth option  
@@ -78,7 +78,7 @@ def main():
             #print("Image resolution: {0} x {1} || Image timestamp: {2}\n".format(image.get_width(), image.get_height(),
                   #timestamp.get_milliseconds()))
             image_count += 1
-            print("Image captured")
+            print("Image captured - " + str(image_count))
             key_pressed = input("Press Enter to continue..(Q to quit)\n")
             
 
