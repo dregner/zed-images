@@ -7,7 +7,7 @@ from datetime import datetime
   # Initialize parser
 parser = argparse.ArgumentParser(description="Acquire images of ZED 2 camera")
 
-  # Adding optional argument
+  # Adding optional arguments
 parser.add_argument("--resolution", "-r", help = "Image resolution: 2000, 1080, 720, 640 (default: 720)", default=720, type=int)
 parser.add_argument("--type", "-t", help = "Image Type: raw or depth (default: raw)", default="raw", type=str)
 parser.add_argument("--path", "-p", help = "Saving path (default: /home/nvidia/Pictures/)", default="/home/nvidia/Pictures/", type=str)
@@ -22,8 +22,8 @@ def main():
     key_pressed = "p" 
     created = False 
     while created == False:
-        if not os.path.isdir(args.Path + datetime.today().strftime('%Y-%m-%d')+"-"+str(folder_count)):
-            folder = os.path.join(args.Path + datetime.today().strftime('%Y-%m-%d')+"-"+str(folder_count))
+        if not os.path.isdir(args.Path + datetime.today().strftime('%Y-%m-%d')+"-E"+str(folder_count)): 
+            folder = os.path.join(args.Path + datetime.today().strftime('%Y-%m-%d')+"-E"+str(folder_count)) # create folder /home/nvidia/Pictures/YYYY-mm-dd-Ex/
             os.makedirs(folder)
             print(folder)
             created = True
@@ -34,7 +34,7 @@ def main():
     # Create a Camera object
     zed = sl.Camera()
 
-    # Create a InitParameters object and set configuration parameters
+    # Define parameters based on resolution arg
     init_params = sl.InitParameters()
     if args.Resolution == 2000:
         init_params.camera_resolution = sl.RESOLUTION.HD2K  # Use HD1080 video mode
@@ -59,8 +59,8 @@ def main():
         
     while key_pressed != "q":
         # Grab an image, a RuntimeParameters object must be given to grab()
-        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
-            # A new image is available if grab() returns SUCCESS
+        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS: # A new image is available if grab() returns SUCCESS
+            # If Type arg brings raw option
             if args.Type == "raw":
               image_left = sl.Mat()
               image_right = sl.Mat()
@@ -68,6 +68,7 @@ def main():
               zed.retrieve_image(image_right, sl.VIEW.RIGHT)
               img_L = cv2.imwrite(os.path.join(folder,"left_"+str(image_count)+".png"), image_left.get_data())
               img_R = cv2.imwrite(os.path.join(folder, "right_"+str(image_count)+".png"),image_right.get_data())
+            # If Type arg brings depth option  
             elif args.Type == "depth":
               depth_image = sl.Mat()
               zed.retrieve_image(depth_image, sl.VIEW.DEPTH)
